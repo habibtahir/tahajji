@@ -1,22 +1,6 @@
 @font-face {
-    font-family: 'Nafees Naskh';
-    src: url('chrome-extension://__MSG_@@extension_id__/fonts/nafees_naskh.woff2') format('woff2');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Nafees Web Naskh';
-    src: url('chrome-extension://__MSG_@@extension_id__/fonts/nafees_web_naskh.woff2') format('woff2');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
     font-family: 'Jameel Noori Nastaleeq';
-    src: url('chrome-extension://__MSG_@@extension_id__/fonts/jameel_noori_nastaleeq.woff2') format('woff2');
+    src: url('chrome-extension://__MSG_@@extension_id__/fonts/jameel_noori_nastaleeq.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
@@ -37,36 +21,3 @@
     font-style: normal;
     font-display: swap;
 }
-
-@font-face {
-    font-family: 'Aslam';
-    src: url('chrome-extension://__MSG_@@extension_id__/fonts/aslam.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'AlQalam Quran Majeed';
-    src: url('chrome-extension://__MSG_@@extension_id__/fonts/alqalam_quran_majeed.otf') format('opentype');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Jameel Noori Nastaleeq Alt';
-    src: url('chrome-extension://__MSG_@@extension_id__/fonts/jameel_noori_nastaleeq_alt.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Mehr Nastaliq Web 3';
-    src: url('chrome-extension://__MSG_@@extension_id__/fonts/mehr_nastaliq_web_3.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
