@@ -4,8 +4,6 @@
 
 'use strict';
 
-//if(!chrome.runtime.lastError && results && results.length && results[0] !== true){
-
 function injectFiles(tabId){
    // script to be inserted at document-end, css at default
    // allFrames will handle iframe too
@@ -13,18 +11,18 @@ function injectFiles(tabId){
     target: {tabId: tabId, allFrames: true},
     files: ['inject.js']}, (results) => {
       if(chrome.runtime.lastError || !results || !results.length) return;
-      if(results[0] == true) // script is loaded already, just check & change font in case
-        chrome.scripting.sendMessage(tabId, {message: "urtextApply"}, (response) => {});
+      if(results[0].result === true) // script is loaded already, just check & change font in case
+        chrome.tabs.sendMessage(tabId, {message: "urtextApply"}, (response) => { void chrome.runtime.lastError; });
       else{
         chrome.scripting.insertCSS({target: {tabId: tabId, allFrames: true}, files: ['css/inject.css']});
         chrome.scripting.insertCSS({target: {tabId: tabId, allFrames: true}, files: ['css/fonts.css']});
-      }  
+      }
     }
   );
 }
 
 chrome.runtime.onInstalled.addListener(function() {
-  chrome.storage.sync.set({active: true, font: 'mehr_nastaliq_web', fontScale: 100, lineScale: 100 });
+  chrome.storage.sync.set({active: true, font: 'jameel-noori-nastaleeq', fontScale: 100, lineScale: 100 });
 });
 
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {

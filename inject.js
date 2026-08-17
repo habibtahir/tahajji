@@ -13,6 +13,7 @@
 	function applyScaling(node,data){
 		if(!data.fontScale) return;
 		node.setAttribute('data-urtext-fontscale', data.fontScale);
+		node.setAttribute('data-urtext-linescale', data.lineScale);
 		var xStyle = node.getAttribute('style') || '';
 		node.setAttribute('style', xStyle.replace(/;urt;.+;urt;/, ''));
 
