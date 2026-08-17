@@ -7,14 +7,6 @@
 }
 
 @font-face {
-    font-family: 'PDMS Pencil Nafees';
-    src: url('chrome-extension://__MSG_@@extension_id__/fonts/pdms_pencil_nafees.woff2') format('woff2');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
     font-family: 'Rouqa';
     src: url('chrome-extension://__MSG_@@extension_id__/fonts/rouqa.woff2') format('woff2');
     font-weight: normal;
@@ -31,14 +23,6 @@
 }
 
 @font-face {
-    font-family: 'PDMS Bukhari';
-    src: url('chrome-extension://__MSG_@@extension_id__/fonts/pdms_bukhari.woff2') format('woff2');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
     font-family: 'Jameel Noori Nastaleeq';
     src: url('chrome-extension://__MSG_@@extension_id__/fonts/jameel_noori_nastaleeq.woff2') format('woff2');
     font-weight: normal;
@@ -47,32 +31,8 @@
 }
 
 @font-face {
-    font-family: 'Mehr Nastaliq Web';
-    src: url('chrome-extension://__MSG_@@extension_id__/fonts/mehr_nastaliq_web.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
     font-family: 'Jameel Noori Kasheeda';
     src: url('chrome-extension://__MSG_@@extension_id__/fonts/jameel_noori_kasheeda.woff2') format('woff2');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'AlQalam Tehreeri';
-    src: url('chrome-extension://__MSG_@@extension_id__/fonts/alqalam_tehreeri.woff2') format('woff2');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'AlQalam Shakir';
-    src: url('chrome-extension://__MSG_@@extension_id__/fonts/alqalam_shakir.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
