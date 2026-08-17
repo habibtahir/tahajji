@@ -25,7 +25,6 @@ Urdu Reader is an open-source browser extension designed to enhance the reading 
 
 ## Limitations:
 
-* When the Font is applied to an HTML tag that contains other language e.g. English characters, its font is also changed (but still readable in the same language).
 * Only global settings, it can't save different setting for each website.
 
 ## Setting up the project:
