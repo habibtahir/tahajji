@@ -8,14 +8,23 @@
   const LTR_CHAR = /[A-Za-z]/;
 
   // Letters that exist in Urdu (and Persian) but not in standard Arabic
-  // orthography: retroflex/aspirated consonants (ٹ ڈ ڑ ھ), letters absent from
-  // Arabic entirely (پ چ ژ گ), the nasalization mark ں, Yeh Barree (ے ۓ), and
-  // Farsi Yeh (ی, vs. Arabic's ي). Their presence is a reliable Urdu signal;
-  // their absence just means the text is written with the alphabet Arabic and
-  // Urdu happen to share, which is treated as Arabic below. This is a heuristic,
-  // not true language detection: a very short Urdu phrase using only shared
-  // letters (e.g. plain "خوش") would be misread as Arabic.
+  // orthography: retroflex/aspirated consonants (Tteh, Ddal, Rreh, Heh
+  // Doachashmee), letters absent from Arabic entirely (Peh, Tcheh, Jeh, Gaf),
+  // the nasalization mark (Noon Ghunna), Yeh Barree, and Farsi Yeh (vs.
+  // Arabic's Yeh). Presence of any of these is a strong, reliable Urdu signal.
   const URDU_ONLY_CHAR = /[\u067E\u0686\u0698\u06A9\u06AF\u0679\u0688\u0691\u06BA\u06BE\u06D2\u06D3\u06CC]/;
+
+  // Common Arabic grammar words (relative pronouns, demonstratives, prepositions,
+  // particles) that Urdu doesn't use -- Urdu's equivalents come from Persian/Hindi
+  // roots (yeh/woh/jo/kab/jahan/ab), not Arabic grammar particles. Matched as
+  // whole words only (lookaround boundaries against any Arabic-script letter),
+  // so e.g. Urdu's "لیکن" (has an extra Yeh) never matches Arabic's "لكن".
+  const ARABIC_WORD = /(?<![\u0600-\u06FF])(?:\u0627\u0644\u0630\u064A|\u0627\u0644\u062A\u064A|\u0627\u0644\u0630\u064A\u0646|\u0647\u0630\u0627|\u0647\u0630\u0647|\u0630\u0644\u0643|\u0639\u0644\u0649|\u0639\u0646\u062F\u0645\u0627|\u0628\u064A\u0646\u0645\u0627|\u0643\u0630\u0644\u0643|\u0647\u0646\u0627\u0643|\u0627\u0644\u0622\u0646|\u0641\u064A|\u0645\u0646|\u0625\u0644\u0649|\u0627\u0644\u0649|\u0639\u0646|\u0645\u0639|\u0639\u0646\u062F|\u0642\u0627\u0644|\u0642\u0627\u0644\u062A|\u0643\u0627\u0646|\u0644\u064A\u0633|\u0633\u0648\u0641|\u0642\u062F|\u0644\u0645|\u0644\u0646|\u0645\u0627|\u0644\u0627|\u0643\u064A\u0641|\u0645\u062A\u0649|\u0644\u0645\u0627\u0630\u0627|\u0623\u064A\u0646|\u062D\u064A\u062B|\u0628\u0639\u062F|\u0642\u0628\u0644|\u062C\u0645\u064A\u0639|\u0623\u064A\u0636\u0627|\u0647\u0624\u0644\u0627\u0621|\u0625\u0646|\u0623\u0646|\u0644\u0643\u0646)(?![\u0600-\u06FF])/;
+
+  // Both fonts are fixed and not user-selectable: Urdu is the default for any
+  // Arabic-script text, and only overridden to the Arabic font when Arabic is
+  // positively detected.
+  const URDU_FONT = 'jameel-noori-nastaleeq';
   const ARABIC_FONT = 'al-majeed-quranic';
 
   // Script-based, not language-based: RTL_CHAR covers the Unicode Arabic-script
@@ -25,14 +34,20 @@
     return RTL_CHAR.test(str);
   }
 
+  // Urdu is the default. It's only classified as Arabic when there's a positive
+  // Arabic signal (a common Arabic-only grammar word) and no Urdu-only letter.
+  // This is a heuristic, not true language detection: a short Arabic phrase with
+  // no grammar word in it (e.g. a name, or a short Quranic phrase quoted as-is,
+  // which is extremely common inside otherwise-Urdu religious text anyway) falls
+  // back to Urdu rather than Arabic.
   function classifyScript(str) {
-    return URDU_ONLY_CHAR.test(str) ? 'ur' : 'ar';
+    if (URDU_ONLY_CHAR.test(str)) return 'ur';
+    if (ARABIC_WORD.test(str)) return 'ar';
+    return 'ur';
   }
 
-  // The Urdu font is whatever the user picked in the popup (defaults to Jameel
-  // Noori Nastaleeq); the Arabic font is fixed, since there's only one.
-  function fontForScript(script, data) {
-    return script === 'ar' ? ARABIC_FONT : data.font;
+  function fontForScript(script) {
+    return script === 'ar' ? ARABIC_FONT : URDU_FONT;
   }
 
   // Splits text into runs of consecutive RTL (Arabic/Urdu) vs LTR (Latin/English)
@@ -91,7 +106,7 @@
     divParent.classList.add("urtext-parent");
     node.classList.add("urtext-self");
     node.setAttribute('data-urtext-script', script);
-    node.classList.add("urtext-font-" + fontForScript(script, data));
+    node.classList.add("urtext-font-" + fontForScript(script));
     applyScaling(node, data);
   }
 
@@ -137,14 +152,14 @@
     }
   }
 
-  // Re-applies the correct font to every already-styled element under node,
-  // per each element's own recorded script (data-urtext-script) rather than a
-  // single font for everything -- Urdu and Arabic elements can legitimately
-  // need different fonts at the same time.
-  function switchFontAll(node, data) {
+  // Re-applies the correct font to every already-styled element under node, per
+  // each element's own recorded script (data-urtext-script). Since font choice is
+  // now fully deterministic from script, this is mostly defensive/idempotent, but
+  // cheap enough to run unconditionally.
+  function switchFontAll(node) {
     node.querySelectorAll("[class*='urtext-font-']").forEach(element => {
       const script = element.getAttribute('data-urtext-script') || 'ur';
-      const font = fontForScript(script, data);
+      const font = fontForScript(script);
       // snapshot first: removing classes while iterating a live classList can
       // skip entries
       Array.from(element.classList).forEach(c => {
@@ -171,7 +186,7 @@
     // If styled elements already exist, just re-verify/correct their fonts and
     // scaling (cheap) instead of re-walking and re-splitting the whole subtree.
     if (exsNode) {
-      switchFontAll(node, data);
+      switchFontAll(node);
       if (!sameScaling(exsNode, data)) switchScalingAll(node, data);
     } else { recursiveApply(node, data); }
   }
@@ -198,7 +213,7 @@
       ['IMG', 'IFRAME', 'SCRIPT', 'LINK'].indexOf(node.nodeName) > -1 ||
       typeof node.querySelector == 'undefined') return;
     if (node.nodeName == '#document') node = document.body;
-    const data = await chrome.storage.sync.get(['active', 'font', 'fontScale', 'lineScale']);
+    const data = await chrome.storage.sync.get(['active', 'fontScale', 'lineScale']);
     data.active ? fontApply(node, data) : fontClear(node);
   }
 

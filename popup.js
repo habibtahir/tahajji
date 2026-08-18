@@ -5,12 +5,6 @@ async function notifyActiveTab(message) {
   if (tab) chrome.tabs.sendMessage(tab.id, message).catch(() => {});
 }
 
-async function changeFont() {
-  const font = document.querySelector('input[name="fontSelect"]:checked').value;
-  await chrome.storage.sync.set({ font });
-  notifyActiveTab({ message: "urtextApply" });
-}
-
 async function changeFontSize(step) {
   let value = parseInt(document.getElementById('fs-number').value.replace('%', ''), 10);
   value = isNaN(value) ? 100 : value;
@@ -35,10 +29,6 @@ async function changeLineHeight(step) {
   notifyActiveTab({ message: "urtextApply" });
 }
 
-document.querySelectorAll('input[name="fontSelect"]').forEach(radio => {
-  radio.addEventListener('change', changeFont);
-});
-
 document.getElementById('switchActive').addEventListener('change', async event => {
   document.getElementById('switchActiveLabel').textContent = event.target.checked ? 'Enabled' : 'Disabled';
   await chrome.storage.sync.set({ active: event.target.checked });
@@ -46,12 +36,9 @@ document.getElementById('switchActive').addEventListener('change', async event =
 });
 
 window.addEventListener('load', async () => {
-  const data = await chrome.storage.sync.get(['active', 'font', 'fontScale', 'lineScale']);
+  const data = await chrome.storage.sync.get(['active', 'fontScale', 'lineScale']);
   document.getElementById('switchActive').checked = data.active;
   document.getElementById('switchActiveLabel').textContent = data.active ? 'Enabled' : 'Disabled';
-  document.getElementsByName('fontSelect').forEach(radio => {
-    if (radio.value == data.font) radio.setAttribute('checked', '');
-  });
   document.getElementById('fs-number').value = data.fontScale + '%';
   document.getElementById('lh-number').value = data.lineScale + '%';
 });

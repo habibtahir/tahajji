@@ -2,16 +2,11 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" type="text/css" href="css/fonts.css" >
-    <link rel="stylesheet" type="text/css" href="css/inject.css" >
     <link rel="stylesheet" type="text/css" href="css/popup.css" >
     <link rel="stylesheet" type="text/css" href="css/switch.css" >
-    <style type="text/css">
-      .radio label{ font-size: 16px; }
-    </style>
   </head>
   <body style="width: 160px;">
-    
+
     <div class="onoffswitch" style="text-align: right;">
       <label class="toggle">
         <span class="toggle-label" id="switchActiveLabel" style="font-weight: 700;">Enabled</span>
@@ -21,16 +16,16 @@
     </div>
 
     <hr/>
-    
+
     <div class="font-size">
       Font Size:
       <div class="value-button minus" id="fs-decrease">-</div>
       <input type="text" id="fs-number" value="100%" disabled="disabled" />
       <div class="value-button plus" id="fs-increase">+</div>
     </div>
-    
+
     <hr/>
-    
+
     <div class="line-height">
       Line Height:
       <div class="value-button minus" id="lh-decrease">-</div>
@@ -40,14 +35,7 @@
 
     <hr/>
 
-    <div class="font-group-label" style="text-align: right; font-weight: 700; font-size: 13px;">Urdu Font</div>
-    <div class="radio urtext-parent">
-      <label class="urtext-self urtext-font-jameel-noori-nastaleeq">نوری نستعلیق<input type="radio" name="fontSelect" value="jameel-noori-nastaleeq" checked></label>
-    </div>
-    <div class="radio urtext-parent">
-      <label class="urtext-self urtext-font-jameel-noori-kasheeda">نستعلیق کشیدہ<input type="radio" name="fontSelect" value="jameel-noori-kasheeda"></label>
-    </div>
-    <div style="text-align: right; font-size: 11px; color: #777; margin-top: 4px;">Arabic text is detected automatically and uses its own font.</div>
+    <div style="text-align: center; font-size: 11px; color: #777;">Urdu and Arabic fonts are applied automatically based on detected language.</div>
 
     <script src="popup.js"></script>
   </body>

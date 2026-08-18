@@ -28,7 +28,7 @@ async function injectFiles(tabId) {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.sync.set({ active: true, font: 'jameel-noori-nastaleeq', fontScale: 100, lineScale: 100 });
+  chrome.storage.sync.set({ active: true, fontScale: 150, lineScale: 150 });
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
