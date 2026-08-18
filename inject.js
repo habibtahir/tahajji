@@ -11,29 +11,14 @@
     return RTL_CHAR.test(str);
   }
 
-  // Splits text into runs of consecutive RTL (Arabic-script) vs LTR (Latin)
-  // letters, so the font/direction change can be applied only to the Arabic-script
-  // portion of mixed-language text instead of the whole containing element.
-  // Characters belonging to neither script (spaces, digits, punctuation) stick to
-  // whichever run they're adjacent to.
-  function splitRuns(text) {
-    const runs = [];
-    let buf = '', bufIsRTL = null;
-    for (const ch of text) {
-      const isRtlChar = RTL_CHAR.test(ch);
-      const isLtrChar = !isRtlChar && LTR_CHAR.test(ch);
-      if (!isRtlChar && !isLtrChar) { buf += ch; continue; }
-      if (bufIsRTL === null || isRtlChar === bufIsRTL) {
-        bufIsRTL = isRtlChar;
-        buf += ch;
-      } else {
-        runs.push({ text: buf, rtl: bufIsRTL });
-        buf = ch;
-        bufIsRTL = isRtlChar;
-      }
-    }
-    if (buf) runs.push({ text: buf, rtl: bufIsRTL === true });
-    return runs;
+  // A "single line" of Arabic/Urdu: contains RTL script and no Latin letters
+  // at all. Lines that mix English with Arabic/Urdu (even a single English
+  // word, or a lone Arabic ligature sitting inside an English sentence) are
+  // left completely untouched -- no attempt is made to surgically extract
+  // just the RTL portion; if a text node isn't entirely Arabic/Urdu, the font
+  // is never applied to any part of it.
+  function isPureRTLLine(str) {
+    return RTL_CHAR.test(str) && !LTR_CHAR.test(str);
   }
 
   function applyScaling(node, data) {
@@ -71,22 +56,29 @@
     return divParent;
   }
 
+  // Aligns/styles exactly the node passed in -- never an ancestor further up.
+  // A previous version walked one level up from the node being styled to find
+  // "the nearest container" for text-align, on the assumption the immediate
+  // parent was just a plain inline wrapper. In practice that ancestor often
+  // turns out to be shared with unrelated content (an English caption sitting
+  // in an adjacent sibling <p>, for example), so marking it bled the
+  // alignment change onto text that has nothing to do with the Urdu/Arabic
+  // line. Only ever touching the exact node here means the only way anything
+  // shared gets marked is if the caller (applyToTextNode) explicitly decided
+  // it was safe to style that shared node directly.
   function setStyle(node, data) {
-    // setting text-align in nearest parent
-    const divParent = getParent(node);
-    divParent.classList.add("urtext-parent");
+    node.classList.add("urtext-parent");
     node.classList.add("urtext-self");
     node.classList.add("urtext-font-" + data.font);
     applyScaling(node, data);
   }
 
-  // True if node's parent also has other direct children (text or elements,
-  // ignoring already-styled urtext-self ones) with non-empty, non-RTL content --
-  // e.g. <br>-separated chat lines that mix English and Urdu/Arabic lines under
-  // one shared element. Styling that shared parent directly (direction, font,
-  // size are all inherited properties) would bleed onto those unrelated lines
-  // too, misaligning/resizing/reversing text that has nothing to do with the
-  // RTL content.
+  // True if parent has other direct children (text or elements, ignoring
+  // already-styled urtext-self ones) with non-empty, non-RTL content -- e.g.
+  // <br>-separated lines that mix an English line and an Urdu/Arabic line
+  // under one shared element, or plain sibling text alongside this text node.
+  // Styling that shared parent directly would bleed onto that unrelated
+  // content too.
   function hasForeignSibling(parent, exceptNode) {
     return Array.prototype.some.call(parent.childNodes, sibling => {
       if (sibling === exceptNode) return false;
@@ -97,47 +89,37 @@
     });
   }
 
-  // Applies the font/direction only to the RTL run(s) of a text node. If the
-  // whole node is a single run AND its parent isn't also shared with unrelated
-  // non-RTL content, styling the parent directly (the previous behaviour) is
-  // enough and avoids extra DOM nodes. Otherwise -- mixed runs within this text
-  // node (e.g. Urdu/Arabic text with English words inline), or a lone RTL line
-  // sharing a parent with other <br>-separated lines that aren't RTL -- the
-  // node is split into per-run spans/text so only the actual RTL portion gets
-  // styled, never a shared container that also holds unrelated text.
+  // Called only for text nodes that are already confirmed pure Arabic/Urdu
+  // (isPureRTLLine). If the text node's parent isn't also shared with
+  // unrelated non-RTL content, styling the parent directly is enough (and
+  // gives proper block-level right-alignment for the common case of a
+  // standalone Urdu paragraph). Otherwise the text node is wrapped in its own
+  // dedicated span, so the styling never reaches a container that also holds
+  // unrelated sibling lines.
   function applyToTextNode(textNode, data) {
-    const runs = splitRuns(textNode.textContent);
     const parent = textNode.parentNode;
-    if (runs.length <= 1 && !hasForeignSibling(parent, textNode)) {
+    if (!hasForeignSibling(parent, textNode)) {
       setStyle(parent, data);
       return;
     }
 
-    const frag = document.createDocumentFragment();
-    runs.forEach(run => {
-      if (run.rtl) {
-        const span = document.createElement('span');
-        span.textContent = run.text;
-        span.setAttribute('data-urtext-wrap', '');
-        frag.appendChild(span);
-        setStyle(span, data);
-      } else {
-        frag.appendChild(document.createTextNode(run.text));
-      }
-    });
-    parent.replaceChild(frag, textNode);
+    const span = document.createElement('span');
+    span.textContent = textNode.textContent;
+    span.setAttribute('data-urtext-wrap', '');
+    parent.replaceChild(span, textNode);
+    setStyle(span, data);
   }
 
   function recursiveApply(node, data) {
-    if (node.nodeName == '#text' && hasRTL(node.textContent)) {
+    if (node.nodeName == '#text' && isPureRTLLine(node.textContent)) {
       applyToTextNode(node, data);
     } else if ((node.nodeName == 'INPUT' || node.nodeName == 'TEXTAREA') && node.type !== 'hidden') {
-      hasRTL(node.value) ? setStyle(node, data) : fontClear(node);
+      isPureRTLLine(node.value) ? setStyle(node, data) : fontClear(node);
     } else if (node == document || (typeof node.className == 'string' && node.className.search('urtext-self') == -1)) {
       // some nodes like svg have object className instead of string
       // preventing to run on newly created span
       // snapshot childNodes first: applyToTextNode() can replace a text node with
-      // several nodes mid-loop, which would corrupt a live NodeList iteration
+      // a new span mid-loop, which would corrupt a live NodeList iteration
       Array.prototype.slice.call(node.childNodes).forEach(n => recursiveApply(n, data));
     }
   }
@@ -205,7 +187,7 @@
       el.removeAttribute('data-urtext-baselineheight');
 
       // Undo the synthetic wrapper spans applyToTextNode() creates for RTL
-      // runs -- restores the original single text node instead of leaving
+      // lines -- restores the original single text node instead of leaving
       // empty, class-less <span> elements permanently splitting up the
       // page's text after the extension is disabled.
       if (el.hasAttribute('data-urtext-wrap')) {
