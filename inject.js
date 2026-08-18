@@ -70,16 +70,36 @@
     applyScaling(node, data);
   }
 
+  // True if node's parent also has other direct children (text or elements,
+  // ignoring already-styled urtext-self ones) with non-empty, non-RTL content --
+  // e.g. <br>-separated chat lines that mix English and Urdu/Arabic lines under
+  // one shared element. Styling that shared parent directly (direction, font,
+  // size are all inherited properties) would bleed onto those unrelated lines
+  // too, misaligning/resizing/reversing text that has nothing to do with the
+  // RTL content.
+  function hasForeignSibling(parent, exceptNode) {
+    return Array.prototype.some.call(parent.childNodes, sibling => {
+      if (sibling === exceptNode) return false;
+      if (sibling.nodeType === Node.ELEMENT_NODE && sibling.classList.contains('urtext-self')) return false;
+      if (sibling.nodeType !== Node.TEXT_NODE && sibling.nodeType !== Node.ELEMENT_NODE) return false;
+      const text = sibling.textContent;
+      return text.trim() !== '' && !hasRTL(text);
+    });
+  }
+
   // Applies the font/direction only to the RTL run(s) of a text node. If the
-  // whole node is a single run, styling its parent (the previous behaviour) is
-  // enough and avoids extra DOM nodes. If it's mixed (e.g. Urdu/Arabic text with
-  // English words inline), the node is split into per-run spans/text so the
-  // English portion keeps the page's own font and direction instead of being
-  // forced into the Urdu/Arabic font.
+  // whole node is a single run AND its parent isn't also shared with unrelated
+  // non-RTL content, styling the parent directly (the previous behaviour) is
+  // enough and avoids extra DOM nodes. Otherwise -- mixed runs within this text
+  // node (e.g. Urdu/Arabic text with English words inline), or a lone RTL line
+  // sharing a parent with other <br>-separated lines that aren't RTL -- the
+  // node is split into per-run spans/text so only the actual RTL portion gets
+  // styled, never a shared container that also holds unrelated text.
   function applyToTextNode(textNode, data) {
     const runs = splitRuns(textNode.textContent);
-    if (runs.length <= 1) {
-      setStyle(textNode.parentNode, data);
+    const parent = textNode.parentNode;
+    if (runs.length <= 1 && !hasForeignSibling(parent, textNode)) {
+      setStyle(parent, data);
       return;
     }
 
@@ -94,7 +114,7 @@
         frag.appendChild(document.createTextNode(run.text));
       }
     });
-    textNode.parentNode.replaceChild(frag, textNode);
+    parent.replaceChild(frag, textNode);
   }
 
   function recursiveApply(node, data) {
