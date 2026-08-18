@@ -4,17 +4,21 @@
 
   const containerTags = ['DIV','SPAN','P','B','I','U','STRONG','LI','EM','TD','A','H1','H2','H3','H4','H5','H6'];
 
-  const RTL_CHAR = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  const RTL_CHAR = /[\u0600-\u06FF\u0750-\u077F\u0870-\u089F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
   const LTR_CHAR = /[A-Za-z]/;
 
+  // Script-based, not language-based: RTL_CHAR covers the Unicode Arabic-script
+  // blocks, so it matches Arabic and Urdu (and Persian/other Arabic-script text)
+  // alike without needing to tell those languages apart.
   function hasRTL(str) {
     return RTL_CHAR.test(str);
   }
 
-  // Splits text into runs of consecutive RTL vs LTR letters, so the font/direction
-  // change can be applied only to the Urdu portion of mixed-language text instead
-  // of the whole containing element. Characters belonging to neither script
-  // (spaces, digits, punctuation) stick to whichever run they're adjacent to.
+  // Splits text into runs of consecutive RTL (Arabic/Urdu) vs LTR (Latin/English)
+  // letters, so the font/direction change can be applied only to the Arabic-script
+  // portion of mixed-language text instead of the whole containing element.
+  // Characters belonging to neither script (spaces, digits, punctuation) stick to
+  // whichever run they're adjacent to.
   function splitRuns(text) {
     const runs = [];
     let buf = '', bufIsRTL = null;
@@ -71,9 +75,10 @@
 
   // Applies the font/direction only to the RTL run(s) of a text node. If the whole
   // node is RTL, styling its parent (the previous behaviour) is enough and avoids
-  // extra DOM nodes. If it's mixed (e.g. Urdu text with English words inline),
-  // the node is split into per-run spans/text so the English portion keeps the
-  // page's own font and direction instead of being forced into the Urdu font.
+  // extra DOM nodes. If it's mixed (e.g. Arabic or Urdu text with English words
+  // inline), the node is split into per-run spans/text so the English portion
+  // keeps the page's own font and direction instead of being forced into the
+  // Arabic/Urdu font.
   function applyToTextNode(textNode, data) {
     const runs = splitRuns(textNode.textContent);
     if (runs.length <= 1) {
