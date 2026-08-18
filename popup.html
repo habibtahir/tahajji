@@ -2,8 +2,13 @@
 <html>
   <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="css/fonts.css" >
+    <link rel="stylesheet" type="text/css" href="css/inject.css" >
     <link rel="stylesheet" type="text/css" href="css/popup.css" >
     <link rel="stylesheet" type="text/css" href="css/switch.css" >
+    <style type="text/css">
+      .radio label{ font-size: 16px; }
+    </style>
   </head>
   <body style="width: 160px;">
 
@@ -35,7 +40,12 @@
 
     <hr/>
 
-    <div style="text-align: center; font-size: 11px; color: #777;">Urdu and Arabic fonts are applied automatically based on detected language.</div>
+    <div class="radio urtext-parent">
+      <label class="urtext-self urtext-font-jameel-noori-nastaleeq">نوری نستعلیق<input type="radio" name="fontSelect" value="jameel-noori-nastaleeq" checked></label>
+    </div>
+    <div class="radio urtext-parent">
+      <label class="urtext-self urtext-font-al-majeed-quranic">قرآن مجید<input type="radio" name="fontSelect" value="al-majeed-quranic"></label>
+    </div>
 
     <script src="popup.js"></script>
   </body>
