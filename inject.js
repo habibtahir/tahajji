@@ -7,11 +7,32 @@
   const RTL_CHAR = /[\u0600-\u06FF\u0750-\u077F\u0870-\u089F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
   const LTR_CHAR = /[A-Za-z]/;
 
+  // Letters that exist in Urdu (and Persian) but not in standard Arabic
+  // orthography: retroflex/aspirated consonants (ٹ ڈ ڑ ھ), letters absent from
+  // Arabic entirely (پ چ ژ گ), the nasalization mark ں, Yeh Barree (ے ۓ), and
+  // Farsi Yeh (ی, vs. Arabic's ي). Their presence is a reliable Urdu signal;
+  // their absence just means the text is written with the alphabet Arabic and
+  // Urdu happen to share, which is treated as Arabic below. This is a heuristic,
+  // not true language detection: a very short Urdu phrase using only shared
+  // letters (e.g. plain "خوش") would be misread as Arabic.
+  const URDU_ONLY_CHAR = /[\u067E\u0686\u0698\u06A9\u06AF\u0679\u0688\u0691\u06BA\u06BE\u06D2\u06D3\u06CC]/;
+  const ARABIC_FONT = 'al-majeed-quranic';
+
   // Script-based, not language-based: RTL_CHAR covers the Unicode Arabic-script
   // blocks, so it matches Arabic and Urdu (and Persian/other Arabic-script text)
   // alike without needing to tell those languages apart.
   function hasRTL(str) {
     return RTL_CHAR.test(str);
+  }
+
+  function classifyScript(str) {
+    return URDU_ONLY_CHAR.test(str) ? 'ur' : 'ar';
+  }
+
+  // The Urdu font is whatever the user picked in the popup (defaults to Jameel
+  // Noori Nastaleeq); the Arabic font is fixed, since there's only one.
+  function fontForScript(script, data) {
+    return script === 'ar' ? ARABIC_FONT : data.font;
   }
 
   // Splits text into runs of consecutive RTL (Arabic/Urdu) vs LTR (Latin/English)
@@ -64,17 +85,19 @@
     return divParent;
   }
 
-  function setStyle(node, data) {
+  function setStyle(node, data, script) {
     // setting text-align in nearest parent
     const divParent = getParent(node);
     divParent.classList.add("urtext-parent");
     node.classList.add("urtext-self");
-    node.classList.add("urtext-font-" + data.font);
+    node.setAttribute('data-urtext-script', script);
+    node.classList.add("urtext-font-" + fontForScript(script, data));
     applyScaling(node, data);
   }
 
-  // Applies the font/direction only to the RTL run(s) of a text node. If the whole
-  // node is RTL, styling its parent (the previous behaviour) is enough and avoids
+  // Applies the font/direction only to the RTL run(s) of a text node, and picks
+  // the Urdu or Arabic font per run via classifyScript(). If the whole node is a
+  // single run, styling its parent (the previous behaviour) is enough and avoids
   // extra DOM nodes. If it's mixed (e.g. Arabic or Urdu text with English words
   // inline), the node is split into per-run spans/text so the English portion
   // keeps the page's own font and direction instead of being forced into the
@@ -82,7 +105,7 @@
   function applyToTextNode(textNode, data) {
     const runs = splitRuns(textNode.textContent);
     if (runs.length <= 1) {
-      setStyle(textNode.parentNode, data);
+      setStyle(textNode.parentNode, data, classifyScript(textNode.textContent));
       return;
     }
 
@@ -92,7 +115,7 @@
         const span = document.createElement('span');
         span.textContent = run.text;
         frag.appendChild(span);
-        setStyle(span, data);
+        setStyle(span, data, classifyScript(run.text));
       } else {
         frag.appendChild(document.createTextNode(run.text));
       }
@@ -104,7 +127,7 @@
     if (node.nodeName == '#text' && hasRTL(node.textContent)) {
       applyToTextNode(node, data);
     } else if ((node.nodeName == 'INPUT' || node.nodeName == 'TEXTAREA') && node.type !== 'hidden') {
-      hasRTL(node.value) ? setStyle(node, data) : fontClear(node);
+      hasRTL(node.value) ? setStyle(node, data, classifyScript(node.value)) : fontClear(node);
     } else if (node == document || (typeof node.className == 'string' && node.className.search('urtext-self') == -1)) {
       // some nodes like svg have object className instead of string
       // preventing to run on newly created span
@@ -114,14 +137,20 @@
     }
   }
 
-  function switchFontAll(node, font) {
+  // Re-applies the correct font to every already-styled element under node,
+  // per each element's own recorded script (data-urtext-script) rather than a
+  // single font for everything -- Urdu and Arabic elements can legitimately
+  // need different fonts at the same time.
+  function switchFontAll(node, data) {
     node.querySelectorAll("[class*='urtext-font-']").forEach(element => {
-      element.classList.forEach(c => {
-        if (c.search("urtext-font") > -1) {
-          element.classList.remove(c);
-          element.classList.add("urtext-font-" + font);
-        }
+      const script = element.getAttribute('data-urtext-script') || 'ur';
+      const font = fontForScript(script, data);
+      // snapshot first: removing classes while iterating a live classList can
+      // skip entries
+      Array.from(element.classList).forEach(c => {
+        if (c.indexOf('urtext-font-') === 0) element.classList.remove(c);
       });
+      element.classList.add('urtext-font-' + font);
     });
   }
 
@@ -129,12 +158,6 @@
     node.querySelectorAll("[class*='urtext-font-']").forEach(element => {
       applyScaling(element, data);
     });
-  }
-
-  function sameFont(aNode, font) {
-    let same = false;
-    aNode.classList.forEach(c => { if (c == 'urtext-font-' + font) same = true; });
-    return same;
   }
 
   function sameScaling(aNode, data) {
@@ -145,9 +168,10 @@
 
   function fontApply(node, data) {
     const exsNode = node.querySelector("[class*='urtext-font-']");
-    // If an element found with style, check its font before switching, otherwise apply first time
+    // If styled elements already exist, just re-verify/correct their fonts and
+    // scaling (cheap) instead of re-walking and re-splitting the whole subtree.
     if (exsNode) {
-      if (!sameFont(exsNode, data.font)) switchFontAll(node, data.font);
+      switchFontAll(node, data);
       if (!sameScaling(exsNode, data)) switchScalingAll(node, data);
     } else { recursiveApply(node, data); }
   }
@@ -162,6 +186,7 @@
       node.setAttribute('style', xStyle.replace(/;urt;.+;urt;/, ''));
       node.removeAttribute('data-urtext-fontscale');
       node.removeAttribute('data-urtext-linescale');
+      node.removeAttribute('data-urtext-script');
     });
   }
 

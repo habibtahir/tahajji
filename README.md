@@ -14,15 +14,17 @@ Urdu Reader is an open-source browser extension designed to enhance the reading 
 
 1. **Independent of the HTML tags:** Efficiently detects Arabic and Urdu characters without relying on DOM meta data like DIR="rtl". When Arabic/Urdu text is mixed with other languages (e.g. English) in the same tag, only the Arabic/Urdu portion gets the font change — the rest is left untouched.
 
-2. **Handles dynamically loaded content:** It activates after the page is initially completes loading but after that, handles dynamically loaded (AJAX) content without refreshing the page.
+2. **Separate Arabic and Urdu fonts:** The extension tells Arabic and Urdu apart automatically (via letters unique to Urdu, such as ٹ ڈ ڑ ں ھ ے ک گ) and applies the right font to each: your chosen Urdu font (Jameel Noori Nastaleeq by default) for Urdu text, and a dedicated Arabic font (Al Majeed Quranic) for Arabic text — no manual switching needed. This is a heuristic rather than true language detection, so very short Arabic-script phrases that don't contain any Urdu-specific letter are treated as Arabic.
 
-3. **Font Customization:** Urdu Reader provides a variety of fonts to choose from, allowing users to select the one that suits their preferences and readability.
+3. **Handles dynamically loaded content:** It activates after the page is initially completes loading but after that, handles dynamically loaded (AJAX) content without refreshing the page.
 
-4. **Font Size Adjustment:** Users can easily adjust the font size to ensure comfortable reading, catering to their visual needs.
+4. **Font Customization:** Urdu Reader provides a variety of fonts to choose from, allowing users to select the one that suits their preferences and readability.
 
-5. **Line Height Control:** The extension also allows users to control the line height, further improving the legibility of Urdu text on webpages.
+5. **Font Size Adjustment:** Users can easily adjust the font size to ensure comfortable reading, catering to their visual needs.
 
-6. **Saves your settings:** Font selection, size and line-height settings don't need to re-configure everytime.
+6. **Line Height Control:** The extension also allows users to control the line height, further improving the legibility of Urdu text on webpages.
+
+7. **Saves your settings:** Font selection, size and line-height settings don't need to re-configure everytime.
 
 ## Limitations
 
@@ -34,7 +36,7 @@ Clone the repostitory and open as a project in your favorite editor. Open Chrome
 
 ## License
 
-Released under the [MIT License](https://opensource.org/license/mit/).
+Released under the [MIT License](LICENSE).
 
 ## Credits
 

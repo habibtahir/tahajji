@@ -13,3 +13,11 @@
     font-style: normal;
     font-display: swap;
 }
+
+@font-face {
+    font-family: 'Al Majeed Quranic';
+    src: url('chrome-extension://__MSG_@@extension_id__/fonts/al_majeed_quranic.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
