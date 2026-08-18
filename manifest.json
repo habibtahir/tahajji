@@ -1,4 +1,4 @@
-{
+﻿{
   "manifest_version": 3,
   "name": "Tahajji - Urdu Reader",
   "version": "1.2",
@@ -9,7 +9,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_name": "Urdu Reader",
+    "default_title": "Urdu Reader",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "images/16.png",
@@ -26,7 +26,7 @@
   },
   "options_page": "options.html",
   "web_accessible_resources": [{
-    "resources": ["*.woff2", "*.ttf"],
+    "resources": ["fonts/*.woff2", "fonts/*.ttf"],
     "matches": ["<all_urls>"]
   }]
 }
