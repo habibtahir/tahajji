@@ -40,18 +40,28 @@
     if (!data.fontScale) return;
     node.setAttribute('data-urtext-fontscale', data.fontScale);
     node.setAttribute('data-urtext-linescale', data.lineScale);
-    let xStyle = node.getAttribute('style') || '';
-    node.setAttribute('style', xStyle.replace(/;urt;.+;urt;/, ''));
+    const xStyle = (node.getAttribute('style') || '').replace(/;urt;.+;urt;/, '');
 
-    const xSize = parseFloat(window.getComputedStyle(node).fontSize);
-    const xHeight = parseFloat(window.getComputedStyle(node).lineHeight);
+    // Percentages must always be computed from the element's true, unscaled
+    // size. Caching it the first time (rather than re-reading
+    // getComputedStyle() on every adjustment) avoids a redundant
+    // layout-forcing call on repeat +/- clicks, and a compounding risk if
+    // anything else ever touches this element's inline style concurrently.
+    let baseSize = node.getAttribute('data-urtext-basefontsize');
+    let baseHeight = node.getAttribute('data-urtext-baselineheight');
+    if (baseSize === null) {
+      baseSize = parseFloat(window.getComputedStyle(node).fontSize);
+      baseHeight = parseFloat(window.getComputedStyle(node).lineHeight);
+      node.setAttribute('data-urtext-basefontsize', baseSize);
+      node.setAttribute('data-urtext-baselineheight', baseHeight);
+    } else {
+      baseSize = parseFloat(baseSize);
+      baseHeight = parseFloat(baseHeight);
+    }
 
-    const nSize = Math.round(data.fontScale / 100 * xSize);
-    const nHeight = Math.round(data.lineScale / 100 * xHeight);
-    const urtStyle = ';urt;font-size:' + nSize + 'px;line-height:' + nHeight + 'px;urt;';
-
-    xStyle = node.getAttribute('style');
-    node.setAttribute('style', xStyle + urtStyle);
+    const nSize = Math.round(data.fontScale / 100 * baseSize);
+    const nHeight = Math.round(data.lineScale / 100 * baseHeight);
+    node.setAttribute('style', xStyle + ';urt;font-size:' + nSize + 'px;line-height:' + nHeight + 'px;urt;');
   }
 
   function getParent(node) {
@@ -108,6 +118,7 @@
       if (run.rtl) {
         const span = document.createElement('span');
         span.textContent = run.text;
+        span.setAttribute('data-urtext-wrap', '');
         frag.appendChild(span);
         setStyle(span, data);
       } else {
@@ -184,12 +195,26 @@
     // in case of input & textarea change to LTR or empty, we need parent of 'urtext-parent'
     if (node.childNodes.length == 0) node = getParent(node).parentNode;
     if (node == undefined) return;
-    node.querySelectorAll("[class*='urtext-']").forEach(node => {
-      node.className.split(' ').forEach(c => { if (c.search("urtext-") > -1) node.classList.remove(c); });
-      const xStyle = node.getAttribute('style') || '';
-      node.setAttribute('style', xStyle.replace(/;urt;.+;urt;/, ''));
-      node.removeAttribute('data-urtext-fontscale');
-      node.removeAttribute('data-urtext-linescale');
+    node.querySelectorAll("[class*='urtext-']").forEach(el => {
+      el.className.split(' ').forEach(c => { if (c.search("urtext-") > -1) el.classList.remove(c); });
+      const xStyle = el.getAttribute('style') || '';
+      el.setAttribute('style', xStyle.replace(/;urt;.+;urt;/, ''));
+      el.removeAttribute('data-urtext-fontscale');
+      el.removeAttribute('data-urtext-linescale');
+      el.removeAttribute('data-urtext-basefontsize');
+      el.removeAttribute('data-urtext-baselineheight');
+
+      // Undo the synthetic wrapper spans applyToTextNode() creates for RTL
+      // runs -- restores the original single text node instead of leaving
+      // empty, class-less <span> elements permanently splitting up the
+      // page's text after the extension is disabled.
+      if (el.hasAttribute('data-urtext-wrap')) {
+        const parent = el.parentNode;
+        if (parent) {
+          parent.replaceChild(document.createTextNode(el.textContent), el);
+          parent.normalize();
+        }
+      }
     });
   }
 
@@ -198,7 +223,7 @@
     //    on the storage request; checking runtime avoids a fatal error.
     // 2. Check if node isn't an html element (e.g. ajax loaded text, SVG)
     if (chrome.runtime?.id == undefined ||
-      ['IMG', 'IFRAME', 'SCRIPT', 'LINK'].indexOf(node.nodeName) > -1 ||
+      ['IMG', 'IFRAME', 'SCRIPT', 'LINK', 'STYLE'].indexOf(node.nodeName) > -1 ||
       typeof node.querySelector == 'undefined') return;
     if (node.nodeName == '#document') node = document.body;
     const data = await chrome.storage.sync.get(['active', 'font', 'fontScale', 'lineScale']);
